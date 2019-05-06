@@ -1,0 +1,158 @@
+<template>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-6">
+        <div class="card">
+          <div class="card-header">View Enrolment</div>
+            <div class="card-body">
+                <div><span class="label">Date:</span> {{enrolment.date}}</div><hr>  <!-- Display the enrolments date -->
+                <div><span class="label">Time:</span> {{ enrolment.time }}</div><hr> <!-- show the time of the enrolment object -->
+                <div><span class="label">Course:</span> {{enrolment.course.title }}</div><hr> <!-- show the title of the course of the enrolment obj -->
+                <div><span class="label">Student:</span> {{enrolment.student.name }}</div><hr> <!-- show the students name corresponding to the enrolment -->
+                <!-- Show and capatalise the first letter, then take away the first letter and display the rest of the enrolments status  -->
+                <div><span class="label">Status:</span> {{enrolment.status.charAt(0).toUpperCase() + enrolment.status.slice(1)}} </div><hr>
+                <!-- navigate to the editEnrolment component and pass the enrolment id with it, within the parameters -->
+                <router-link :to="{ name: 'editEnrolment', params: { id: enrolment.id} }" class="btn btn-outline-primary">Edit</router-link>
+                <!-- onClick navigate to last page -->
+                <button @click="$router.go(-1)" class="btn btn-secondary backBtn">Go back</button>
+                <button type="button" class="btn btn-outline-danger" data-toggle="modal" data-target="#myModal">Delete</button> <!-- button trggers modal  -->
+                <!-- Modal -->
+                <div class="modal fade" id="myModal" role="dialog">
+                  <div class="modal-dialog modal-md">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h4 class="modal-title">Delete Enrolment</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button> <!-- close the modal -->
+                      </div>
+                      <div class="modal-body">
+                        <p>Are you sure you want to delete this enrolment?</p> <!-- Asking the user if they are sure they want to delete the enrolment -->
+                      </div>
+                      <div class="modal-footer">
+                        <!-- OnClick call the deleteEnrolment method and pass the enrolment to be deleted, dismiss the modal -->
+                        <button class="confirmBtn btn btn-outline-danger" v-on:click="deleteEnrolment(enrolment)" :value="enrolment.id" data-dismiss="modal">Confirm</button>
+                        <!-- Cancel the deletion of the enrolment -->
+                        <button type="button" class="btn btn-default btn-secondary" data-dismiss="modal">Cancel</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+    export default {
+        data: function () {
+            return {
+                enrolment: { //passing the enrolment object's data
+                  id: 'id', //setting id as enrolment id as a warning was displaying within the console
+                    date: '',
+                    time: '',
+                    student_id: '',
+                    course_id: '',
+                    status: '',
+
+                    course: { //course object
+                      title: '' //course title set to nothing
+                    },
+                    student:{ //using student object
+                      name: ''
+                    }
+                },
+                errors: {}
+            }
+        },
+        mounted() { //carried out when enrolment loads
+          if(localStorage.getItem('token')===null) { //checking if user is authenticated and logged in
+            this.$router.push({ name: "login"}) //push the user to the login component
+            alert('You must be logged in to view this page.'); //show alert that user must be logged in
+          }
+            var app = this; //declaring app as this
+            var id = app.$route.params.id; //setting id as the id that was passed as a parameter that was in the router link
+            var token = localStorage.getItem('token'); //setting token to localStorage token to be passed in header
+            axios.get('/api/enrolments/' + id, { //axios GET request to get enrolment details by its id
+                headers: { Authorization: "Bearer " + token} //sending bearer token for Authorization
+              })
+            .then(function (resp) { //if successful
+                console.log(resp.data);  //show the response in the console
+                app.enrolment = resp.data; //show the enrolment in the console
+            })
+            .catch(function (resp) { //if the request fails
+                console.log(resp); //show the response in the console
+                alert('Could not load enrolment'); //show alert saying could not load the enrolment
+                this.$router.push({ name: "/home"}) //push to home component if fails
+            });
+
+            axios.get('/api/students', { headers: { Authorization: "Bearer " + token} })
+            .then(function (resp) { //if successful
+                console.log(resp.data); //show the response in the console
+                app.students = resp.data; //show the students in the console
+            })
+            .catch(function (resp) { //if the request fails
+                console.log(resp); //show the response in the console
+                alert('Could not load students');
+
+            });
+
+            axios.get('/api/courses', { headers: { Authorization: "Bearer " + token} })
+            .then(function (resp) { //if successful
+                console.log(resp.data); //show the response in the console
+                app.courses = resp.data; //show the cousre in the console response
+            })
+            .catch(function (resp) { //if the request fails
+                console.log(resp); //show the response in the console
+                alert('Could not load students');
+            });
+        },
+
+        methods: {
+          deleteEnrolment(enrolment) { //delete enrolment method with enrolment in parameter
+              event.preventDefault();
+              var app = this; //declaring app as this
+              var id = app.enrolment.id; //declaring id as this enrolments id
+              var token = localStorage.getItem('token'); //declaring token variable as token stored in localStorage
+              axios.delete('/api/enrolments/' + id, //axios delete request to route of REST api with the id of the enrolment
+                {
+                  headers: { Authorization: "Bearer " + token} //passing Authorization header with Bearer token
+                })
+                  .then(function (resp) { //if successful
+                    app.$router.push({path: '/home'}); //push to component named /home
+                    console.log("Deleted enrolment"); //console that the enrolment was deleted
+                    $("#SuccessDeleteModal").modal() //call the modal
+                  })
+                  .catch(function (resp) { //if request fails
+                      app.errors = resp.response.data;
+                  });
+              }
+          }
+        }
+</script>
+
+<style>
+
+input[type="radio"] {
+  margin-right: 5px;
+}
+.form-group{
+  margin-bottom: 30px;
+}
+.radioCheck{
+    margin-left: 20px;
+}
+.backBtn{
+  float: right;
+}
+.label{
+  padding-right: 10px;
+  font-weight: 700;
+}
+.modal-footer{
+  display: block;
+}
+
+</style>
