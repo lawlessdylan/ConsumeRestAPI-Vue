@@ -1,0 +1,175 @@
+<template>
+
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-8">
+      <div class="card">
+        <div class="card-header">Edit Enrolment</div>
+        <div class="card-body">
+            <form>
+                <div class="form-row">
+                    <div class="col-6 form-group">
+                        <label>Date:</label>
+                        <input type="date" v-model="enrolment.date" class="form-control"> <!-- display input enrolment date  -->
+                        <p class="text-danger" v-if="errors.date">{{ errors.date[0] }}</p> <!-- if there is an error with date display the error -->
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Time:</label>
+                        <input type="time" v-model="enrolment.time" class="form-control"> <!-- display input enrolment time, v-model of enrolment.time  -->
+                        <p class="text-danger" v-if="errors.time">{{ errors.time[0] }}</p> <!-- if there is an error with date display the error -->
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Course:</label>
+                        <select v-model="enrolment.course_id" class="form-control"> <!-- select tag for courses -->
+                            <option v-for="course in courses" :value="course.id"> <!-- option for each course in array of courses -->
+                                {{ course.title }} <!-- Show the title of course as the option  -->
+                            </option>
+                        </select>
+                        <p class="text-danger" v-if="errors.course_id">{{ errors.course_id[0] }}</p> <!-- if there is an error with course display the error message -->
+                    </div>
+
+                    <div class="col-md-6 form-group">
+                        <label>Student:</label>
+                        <select v-model="enrolment.student_id" class="form-control"> <!-- select tag for courses -->
+                            <option v-for="student in students" :value="student.id"> <!-- option for each student in array of students -->
+                                {{ student.name }} <!-- Show the title of student as the option  -->
+                            </option>
+                        </select>
+                        <p class="text-danger" v-if="errors.student_id">{{ errors.student_id[0] }}</p> <!-- if there is an error with course display the error message -->
+                    </div>
+
+                    <div class="form-group col-md-12">
+                      <label class="labelStatus">Status:</label>
+                          <!-- Radio button for each status type, will be pre-checked-->
+                          <label class="radio-inline"><input id="attending" type="radio" value="attending" name="status" v-model="enrolment.status" >Attending</label>&nbsp;
+                          <label class="radio-inline"><input class="radioCheck" id="withdrawn" type="radio" value="withdrawn" name="status" v-model="enrolment.status">Withdrawn</label>&nbsp;
+                          <label class="radio-inline"><input class="radioCheck" id="deferred" type="radio" value="deferred" name="status" v-model="enrolment.status">Deferred</label>&nbsp;
+                          <label class="radio-inline"><input class="radioCheck" id="registered" type="radio" value="registered" name="status" v-model="enrolment.status"> Registered</label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="col-md-12 form-group">
+                        <button type="button" class="btn btn-outline-primary" data-toggle="modal" data-target="#editModal">Update</button> <!-- calls edit confirm modal -->
+                          <!-- Modal -->
+                          <div class="modal fade" id="editModal" role="dialog">
+                            <div class="modal-dialog modal-md">
+                              <div class="modal-content">
+                                <div class="modal-header">
+                                  <h4 class="modal-title">Edit Enrolment</h4>
+                                  <button type="button" class="close" data-dismiss="modal">&times;</button> <!-- close modal -->
+                                </div>
+                                <div class="modal-body">
+                                  <p>Are you sure you want to edit this enrolment?</p> <!-- asking user if they are sure theeey want to edit enrolment -->
+                                </div>
+                                <div class="modal-footer">
+                                  <!-- calling saveForm method if user clicks on confirm -->
+                                  <button class="confirmBtn btn btn-outline-primary" v-on:click="saveForm()" data-dismiss="modal">Confirm</button>
+                                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button> <!-- cancelling update -->
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        <router-link to="/" class="btn btn-secondary">Cancel</router-link> <!-- router links back if user cancels edit of enrolment -->
+                    </div>
+                </div>
+            </form>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+    export default {
+        data: function () {
+            return {
+              enrolment: { //passing the enrolment object's data
+                id: 'id', //setting id as enrolment id as a warning was displaying within the console
+                  date: '',
+                  time: '',
+                  student_id: '',
+                  course_id: '',
+                  status: '',
+                },
+                courses: [], //courses array
+                students: [], //stduents array
+                errors: {}
+            }
+        },
+        mounted() {
+          var app = this; //declaring app as this
+          var id = app.$route.params.id; //setting id as the id that was passed as a parameter that was in the router link
+          var token = localStorage.getItem('token'); //setting token to localStorage token to be passed in header
+          axios.get('/api/enrolments/' + id, { //axios GET request to get enrolment details by its id
+              headers: { Authorization: "Bearer " + token} //sending bearer token for Authorization
+            })
+          .then(function (resp) { //if successful
+              console.log(resp.data);  //show the response in the console
+              app.enrolment = resp.data; //show the enrolment in the console
+          })
+          .catch(function (resp) { //if the request fails
+              console.log(resp); //show the response in the console
+              alert('Could not load enrolment'); //show alert saying could not load the enrolment
+              this.$router.push({ name: "/home"}) //push to home component if fails
+          });
+          axios.get('/api/students', { headers: { Authorization: "Bearer " + token} })
+          .then(function (resp) { //if successful
+              console.log(resp.data); //show the response in the console
+              app.students = resp.data; //show the students in the console
+          })
+          .catch(function (resp) { //if the request fails
+              console.log(resp); //show the response in the console
+              alert('Could not load students');
+          });
+          axios.get('/api/courses', { headers: { Authorization: "Bearer " + token} })
+          .then(function (resp) { //if successful
+              console.log(resp.data); //show the response in the console
+              app.courses = resp.data; //show the cousre in the console response
+          })
+          .catch(function (resp) { //if the request fails
+              console.log(resp); //show the response in the console
+              alert('Could not load students');
+          });
+        },
+        methods: {
+            saveForm() { //saveForm method
+                event.preventDefault();
+                var app = this; //declaring app as this
+                var id = app.$route.params.id; //declaring id as the id that was passed within router link
+                var newEnrolment = app.enrolment; //new enrolment object as enrolment object
+                var token = localStorage.getItem('token'); //getting token from localStorage to be passed in headers
+                axios.put('/api/enrolments/' + id, newEnrolment, //axios PUT request with id of enrolment and the new enrolment object
+                {
+                   headers: { Authorization: "Bearer " + token} //headers of request with Authorization Bearer token that was in localStorage
+                 })
+                  .then(function (resp) { //if successful
+                    app.$router.push({path: '/home'}); //navigate the user to the component named /home
+                    $("#SuccessEditModal").modal() //call the successful edit modal
+                    console.log("Updated enrolment"); //console that enrolment was updated
+                  })
+                  .catch(function (resp) { //if request fails
+                      app.errors = resp.response.data;
+                  });
+            }
+        }
+    }
+</script>
+<style>
+
+input[type="radio"] {
+  margin-right: 5px;
+}
+.form-group{
+  margin-bottom: 30px;
+}
+.radioCheck{
+    margin-left: 20px;
+}
+.labelStatus{
+  margin-right: 10px;
+}
+
+</style>
