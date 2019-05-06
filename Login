@@ -1,0 +1,61 @@
+<template>
+    <div class="card card-default">
+        <div class="card-header">Login</div>
+        <div class="card-body">
+            <form v-on:submit="login()"> <!-- on form submit call login function -->
+                <div class="form-row">
+                    <div class="col-md-6 form-group">
+                        <label>Email</label>
+                        <input type="text" v-model="user.email" class="form-control"> <!-- input for user email -->
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label>Password</label>
+                        <input type="password" v-model="user.password" class="form-control"> <!-- input for user password -->
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="col-md-12 form-group">
+                        <button class="btn btn-primary" type="submit">Login</button> <!-- Submit button for form -->
+                        <p class="text-danger" v-if="errorMessage != ''">{{ errorMessage }}</p> <!-- display error message if validation error -->
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</template>
+
+<script>
+    export default {
+        data: function () {
+            return {
+                user: {
+                    email: '', //user email set
+                    password: '' //password set
+                },
+                errorMessage: '' //error miessage set
+            }
+        },
+        mounted() { //called at component load
+            var app = this; //declaring app as this
+            if (localStorage.getItem('token') !== null) { //checking if user is already logged in,
+                app.$router.push({name: 'home'});//if logged in then navigate to the component with the name of /home
+            }
+        },
+        methods: {
+            login() { //login method
+                event.preventDefault();
+                var app = this; //declaring app as this
+                axios.post('/api/login', app.user) //axios  POST request to rest api route with user object
+                    .then(function (resp) { //if successful
+                      localStorage.setItem('token', resp.data.token); //place a token in local storage as the token that was in the HTTP response
+                      app.$router.push({name: 'home'}); //navigate to the component named home
+                      console.log("Successfully logged in."); //console that the user is Successfully logged in
+                    })
+                    .catch(function (resp) { //if request fails
+                        app.errorMessage = "Something went wrong."; //display that something went wrong with the request
+                    });
+            }
+        }
+    }
+</script>
